@@ -135,7 +135,7 @@ def sample(cfg, logger):
 
         needed_resolution = model.decoder.layer_to_resolution[-1]
         # needed_resolution = 512
-        print(needed_resolution)
+        # print(needed_resolution)
         while x.shape[2] > needed_resolution:
             x = F.avg_pool2d(x, 2, 2)
         if x.shape[2] != needed_resolution:
@@ -201,7 +201,7 @@ def sample(cfg, logger):
     im = update_image(latents_original)
     im1 = update_image(latents_original1)
     im2 = update_image(latents_original1)
-    print(im.shape)
+    # print(im.shape)
     im = bimpy.Image(im)
     im1 = bimpy.Image(im1)
     im2 = bimpy.Image(im2)
@@ -216,9 +216,10 @@ def sample(cfg, logger):
             new_latents = alpha*latents_original + (1-alpha)*latents_original1
             # print(attribute_values[0].value)
 
+            im = bimpy.Image(img_src)
+            im1 = bimpy.Image(img_src1)
+
             if display_original:
-                im = bimpy.Image(img_src)
-                im1 = bimpy.Image(img_src1)
                 im2 = bimpy.Image(img_src1)
             else:
                 im2 = bimpy.Image(update_image(new_latents))
