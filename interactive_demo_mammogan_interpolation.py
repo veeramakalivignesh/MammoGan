@@ -29,18 +29,9 @@ import bimpy
 lreq.use_implicit_lreq.set(True)
 
 
-indices = [0, 1, 2, 3, 4, 10, 11, 17, 19]
+indices = [0]
 
-labels = ["gender",
-          "smile",
-          "attractive",
-          "wavy-hair",
-          "young",
-          "big lips",
-          "big nose",
-          "chubby",
-          "glasses",
-          ]
+labels = ["interpolation constant"]
 
 
 def sample(cfg, logger):
@@ -107,13 +98,14 @@ def sample(cfg, logger):
         # x = torch.lerp(model.dlatent_avg.buff.data, x, coefs)
         return model.decoder(x, layer_count - 1, 1, noise=True)
 
-    path = 'dataset_samples/faces/realign1024x1024'
+    path = 'dataset_samples/mammogans/'
 
     paths = list(os.listdir(path))
     paths.sort()
     paths_backup = paths[:]
-    randomize = bimpy.Bool(True)
+    randomize = bimpy.Bool(False)
     current_file = bimpy.String("")
+    current_file1 = bimpy.String("")
 
     ctx = bimpy.Context()
 
@@ -123,13 +115,17 @@ def sample(cfg, logger):
 
     rnd = np.random.RandomState(5)
 
-    def loadNext():
+    def loadNext(flag):
         img = np.asarray(Image.open(path + '/' + paths[0]))
-        current_file.value = paths[0]
+        if flag:
+            current_file.value = paths[0]
+        else:
+            current_file1.value = paths[0]
         paths.pop(0)
         if len(paths) == 0:
             paths.extend(paths_backup)
 
+        img = np.array([img,img,img]).transpose((1,2,0))
         if img.shape[2] == 4:
             img = img[:, :, :3]
         im = img.transpose((2, 0, 1))
@@ -138,6 +134,8 @@ def sample(cfg, logger):
             x = x[:3]
 
         needed_resolution = model.decoder.layer_to_resolution[-1]
+        # needed_resolution = 512
+        print(needed_resolution)
         while x.shape[2] > needed_resolution:
             x = F.avg_pool2d(x, 2, 2)
         if x.shape[2] != needed_resolution:
@@ -145,17 +143,10 @@ def sample(cfg, logger):
 
         img_src = ((x * 0.5 + 0.5) * 255).type(torch.long).clamp(0, 255).cpu().type(torch.uint8).transpose(0, 2).transpose(0, 1).numpy()
 
+        # print(x[None, ...].cuda().device)
         latents_original = encode(x[None, ...].cuda())
-        latents = latents_original[0, 0].clone()
-        latents -= model.dlatent_avg.buff.data[0]
 
-        for v, w in zip(attribute_values, W):
-            v.value = (latents * w).sum()
-
-        for v, w in zip(attribute_values, W):
-            latents = latents - v.value * w
-
-        return latents, latents_original, img_src
+        return latents_original, img_src
 
     def loadRandom():
         latents = rnd.randn(1, cfg.MODEL.LATENT_SPACE_SIZE)
@@ -179,29 +170,34 @@ def sample(cfg, logger):
 
         return latents, latents_original, img_src
 
-    latents, latents_original, img_src = loadNext()
+    latents_original, img_src = loadNext(True)
+    latents_original1, img_src1 = loadNext(False)
 
     ctx.init(1800, 1600, "Styles")
 
-    def update_image(w, latents_original):
+    def update_image(latents):
         with torch.no_grad():
-            w = w + model.dlatent_avg.buff.data[0]
-            w = w[None, None, ...].repeat(1, model.mapping_fl.num_layers, 1)
+            # w = w + model.dlatent_avg.buff.data[0]
+            # w = w[None, None, ...].repeat(1, model.mapping_fl.num_layers, 1)
 
-            layer_idx = torch.arange(model.mapping_fl.num_layers)[np.newaxis, :, np.newaxis]
-            cur_layers = (7 + 1) * 2
-            mixing_cutoff = cur_layers
-            styles = torch.where(layer_idx < mixing_cutoff, w, latents_original)
+            # layer_idx = torch.arange(model.mapping_fl.num_layers)[np.newaxis, :, np.newaxis]
+            # cur_layers = (7 + 1) * 2
+            # mixing_cutoff = cur_layers
+            # styles = torch.where(layer_idx < mixing_cutoff, w, latents_original)
 
-            x_rec = decode(styles)
+            x_rec = decode(latents)
             resultsample = ((x_rec * 0.5 + 0.5) * 255).type(torch.long).clamp(0, 255)
             resultsample = resultsample.cpu()[0, :, :, :]
             return resultsample.type(torch.uint8).transpose(0, 2).transpose(0, 1)
 
     im_size = 2 ** (cfg.MODEL.LAYER_COUNT + 1)
-    im = update_image(latents, latents_original)
+    im = update_image(latents_original)
+    im1 = update_image(latents_original1)
+    im2 = update_image(latents_original1)
     print(im.shape)
     im = bimpy.Image(im)
+    im1 = bimpy.Image(im1)
+    im2 = bimpy.Image(im2)
 
     display_original = True
 
@@ -209,21 +205,29 @@ def sample(cfg, logger):
 
     while not ctx.should_close():
         with ctx:
-            new_latents = latents + sum([v.value * w for v, w in zip(attribute_values, W)])
+            alpha = attribute_values[0].value
+            new_latents = alpha*latents_original + (1-alpha)*latents_original1
+            # print(attribute_values[0].value)
+            # print(new_latents.shape)
 
+            im = bimpy.Image(img_src)
+            im1 = bimpy.Image(img_src1)
             if display_original:
-                im = bimpy.Image(img_src)
+                im2 = bimpy.Image(img_src1)
             else:
-                im = bimpy.Image(update_image(new_latents, latents_original))
+                im2 = bimpy.Image(update_image(new_latents))
 
             bimpy.begin("Principal directions")
-            bimpy.columns(2)
+            bimpy.columns(3)
             bimpy.set_column_width(0, im_size + 20)
             bimpy.image(im)
+            bimpy.image(im1)
+            bimpy.next_column()
+            bimpy.image(im2)
             bimpy.next_column()
 
             for v, label in zip(attribute_values, labels):
-                bimpy.slider_float(label, v, -40.0, 40.0)
+                bimpy.slider_float(label, v, 0.0, 1.0)
 
             bimpy.checkbox("Randomize noise", randomize)
 
@@ -232,23 +236,21 @@ def sample(cfg, logger):
 
             torch.manual_seed(seed)
 
-            if bimpy.button('Next'):
-                latents, latents_original, img_src = loadNext()
-                display_original = True
             if bimpy.button('Display Reconstruction'):
                 display_original = False
-            if bimpy.button('Generate random'):
-                latents, latents_original, img_src = loadRandom()
-                display_original = False
 
-            if bimpy.input_text("Current file", current_file, 64) and os.path.exists(path + '/' + current_file.value):
+            if bimpy.input_text("Mammogram 1", current_file, 64) and os.path.exists(path + '/' + current_file.value):
                 paths.insert(0, current_file.value)
-                latents, latents_original, img_src = loadNext()
+                latents_original, img_src = loadNext(True)
+            
+            if bimpy.input_text("Mammogram 2", current_file1, 64) and os.path.exists(path + '/' + current_file1.value):
+                paths.insert(0, current_file1.value)
+                latents_original1, img_src1 = loadNext(False)
 
             bimpy.end()
 
 
 if __name__ == "__main__":
     gpu_count = 1
-    run(sample, get_cfg_defaults(), description='ALAE-interactive', default_config='configs/ffhq.yaml',
+    run(sample, get_cfg_defaults(), description='ALAE-interactive', default_config='configs/mammogans_hd.yaml',
         world_size=gpu_count, write_log=False)

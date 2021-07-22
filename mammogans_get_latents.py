@@ -25,10 +25,10 @@ from defaults import get_cfg_defaults
 import lreq
 import tqdm
 from PIL import Image
+import pickle as pkl
 
 
 lreq.use_implicit_lreq.set(True)
-
 
 def place(canvas, image, x, y):
     im_size = image.shape[2]
@@ -55,6 +55,9 @@ def save_sample(model, sample, i):
 
 def sample(cfg, logger):
     torch.cuda.set_device(0)
+    # print("hi")
+    # cfg.OUTPUT_DIR = "mammogans_blur_result"
+    # print(cfg.OUTPUT_DIR)
     model = Model(
         startf=cfg.MODEL.START_CHANNEL_COUNT,
         layer_count=cfg.MODEL.LAYER_COUNT,
@@ -69,7 +72,7 @@ def sample(cfg, logger):
     model.cuda(0)
     model.eval()
     model.requires_grad_(False)
-
+    # cfg.OUTPUT_DIR = "mammogans_blur_result"
     decoder = model.decoder
     encoder = model.encoder
     mapping_tl = model.mapping_tl
@@ -127,11 +130,20 @@ def sample(cfg, logger):
     random.shuffle(paths)
 
     def make(paths):
-        canvas = []
+        latent_set = []
         with torch.no_grad():
+            loss = 0
             for filename in paths:
                 img = np.asarray(Image.open(path + '/' + filename))
-                img = np.array([img,img,img]).transpose((1,2,0))
+                if(img.shape==(28,28)):
+                    img = np.pad(img,(2,2))
+                    img = np.array([img,img,img]).transpose((1,2,0))
+                flag = False
+                if(img.shape==(512,512)):
+                    # if(img[:,:256].mean()<img[:,256:].mean()):
+                    #     flag = True
+                    #     img = img[:,::-1]
+                    img = np.array([img,img,img]).transpose((1,2,0))
                 if img.shape[2] == 4:
                     img = img[:, :, :3]
                 im = img.transpose((2, 0, 1))
@@ -143,10 +155,8 @@ def sample(cfg, logger):
                     x = torch.nn.functional.avg_pool2d(x[None, ...], factor, factor)[0]
                 assert x.shape[2] == im_size
                 latents = encode(x[None, ...].cuda())
-                f = decode(latents)
-                r = torch.cat([x[None, ...].detach().cpu(), f.detach().cpu()], dim=3)
-                canvas.append(r)
-        return canvas
+                latent_set.append(latents)
+        return latent_set
 
     def chunker_list(seq, n):
         return [seq[i * n:(i + 1) * n] for i in range((len(seq) + n - 1) // n)]
@@ -154,17 +164,18 @@ def sample(cfg, logger):
     paths = chunker_list(paths, 8 * 3)
 
     for i, chunk in enumerate(paths):
-        canvas = make(chunk)
-        canvas = torch.cat(canvas, dim=0)
-
-        save_path = 'make_figures/output/%s/reconstructions_%d.png' % (cfg.NAME, i)
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
-        save_image(canvas * 0.5 + 0.5, save_path,
-                   nrow=3,
-                   pad_value=1.0)
+        latent_list = make(chunk)
+        if i==0:
+            latent_set = torch.cat(latent_list, dim=0)
+        else:
+            temp = torch.cat(latent_list, dim=0)
+            latent_set = torch.cat([temp,latent_set], dim=0)
+        print(latent_set.shape)
+    with open("latents.pkl", "wb") as fout:
+        pkl.dump(latent_set, fout, protocol=pkl.HIGHEST_PROTOCOL)
 
 
 if __name__ == "__main__":
     gpu_count = 1
-    run(sample, get_cfg_defaults(), description='ALAE-figure-reconstructions-paged', default_config='configs/ffhq.yaml',
+    run(sample, get_cfg_defaults(), description='ALAE-figure-reconstructions-paged', default_config='configs/mammogans_hd.yaml',
         world_size=gpu_count, write_log=False)

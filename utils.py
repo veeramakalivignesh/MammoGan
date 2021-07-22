@@ -19,6 +19,7 @@ import threading
 import hashlib
 import pickle
 import os
+import PIL.Image
 
 
 class cache:
@@ -100,3 +101,23 @@ class Registry(dict):
             self[module_name] = module
             return module
         return register_fn
+
+def convert_to_pil_image(image, drange=[0,1]):
+    assert image.ndim == 2 or image.ndim == 3
+    if image.ndim == 3:
+        if image.shape[0] == 1:
+            image = image[0] # grayscale CHW => HW
+        else:
+            image = image.transpose(1, 2, 0) # CHW -> HWC
+
+    image = adjust_dynamic_range(image, drange, [0,255])
+    image = np.rint(image).clip(0, 255).astype(np.uint8)
+    format = 'RGB' if image.ndim == 3 else 'L'
+    return PIL.Image.fromarray(image, format)
+
+def save_image(image, filename, drange=[0,1], quality=95):
+    img = convert_to_pil_image(image, drange)
+    if '.jpg' in filename:
+        img.save(filename,"JPEG", quality=quality, optimize=True)
+    else:
+        img.save(filename)

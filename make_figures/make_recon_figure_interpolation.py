@@ -121,13 +121,23 @@ def sample(cfg, logger):
     path = cfg.DATASET.SAMPLES_PATH
     im_size = 2 ** (cfg.MODEL.LAYER_COUNT + 1)
 
-    pathA = '00001.png'
-    pathB = '00022.png'
-    pathC = '00077.png'
-    pathD = '00016.png'
+    # pathA = '00001.png'
+    # pathB = '00022.png'
+    # pathC = '00077.png'
+    # pathD = '00016.png'
+
+    pathC = 'FILE03585064.png'
+    pathB = 'FILE03845539.png'
+    pathA = 'FILE1249600.png'
+    pathD = 'FILE03728363.png'
 
     def open_image(filename):
         img = np.asarray(Image.open(path + '/' + filename))
+        if(img.shape==(28,28)):
+                img = np.pad(img,(2,2))
+                img = np.array([img,img,img]).transpose((1,2,0))
+        if(img.shape==(512,512)):
+                img = np.array([img,img,img]).transpose((1,2,0))
         if img.shape[2] == 4:
             img = img[:, :, :3]
         im = img.transpose((2, 0, 1))

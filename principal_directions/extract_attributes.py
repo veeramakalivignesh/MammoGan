@@ -23,6 +23,8 @@ from net import *
 import numpy as np
 import tensorflow as tf
 import principal_directions.classifier
+from PIL import Image
+import matplotlib.pyplot as plt
 
 
 def parse_tfrecord_np(record):
@@ -49,8 +51,10 @@ class Predictions:
             ds = tf.data.TFRecordDataset("principal_directions/generated_data.000")
             ds = ds.batch(self.minibatch_size)
             batch = ds.make_one_shot_iterator().get_next()
-
+            
+            print("yo")
             classifier = principal_directions.classifier.make_classifier(attrib_idx)
+            print("yo1")
             i = 0
             while True:
                 try:
@@ -70,8 +74,12 @@ class Predictions:
                     images = np.stack(images)
                     dlats = np.stack(dlats)
                     lats = np.stack(lats)
+                    print(images.shape)
+                    print("yo2")
                     logits = classifier.run(images, None, num_gpus=1, assume_frozen=True)
+                    print("yo3")
                     logits = torch.tensor(logits)
+                    print("yo4")
                     predictions = torch.softmax(torch.cat([logits, -logits], dim=1), dim=1)
 
                     result_dict = dict(latents=lats, dlatents=dlats)
@@ -80,7 +88,7 @@ class Predictions:
                     i += 1
                 except tf.errors.OutOfRangeError:
                     break
-
+        
         results = {key: np.concatenate([value[key] for value in result_expr], axis=0) for key in result_expr[0].keys()}
 
         np.save("principal_directions/wspace_att_%d" % attrib_idx, results)

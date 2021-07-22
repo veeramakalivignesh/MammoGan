@@ -36,7 +36,7 @@ class ImageGenerator:
         tfr_writer = tf.python_io.TFRecordWriter("principal_directions/generated_data.000", tfr_opt)
 
         rnd = np.random.RandomState(5)
-
+        # print("yo")
         for _ in tqdm(range(0, self.num_samples, self.minibatch_size)):
             torch.cuda.set_device(0)
             latents = rnd.randn(self.minibatch_size, self.cfg.MODEL.LATENT_SPACE_SIZE)
@@ -46,11 +46,11 @@ class ImageGenerator:
             images = decoder(dlat, lod, 1.0, True)
 
             # Downsample to 256x256. The attribute classifiers were built for 256x256.
-            factor = images.shape[2] // 256
+            factor = images.shape[2] // 32
+            # print(factor)
             if factor != 1:
                 images = torch.nn.functional.avg_pool2d(images, factor, factor)
             images = np.clip((images.cpu().numpy() + 1.0) * 127, 0, 255).astype(np.uint8)
-
             for i, img in enumerate(images):
                 ex = tf.train.Example(features=tf.train.Features(feature={
                     'shape': tf.train.Feature(int64_list=tf.train.Int64List(value=img.shape)),

@@ -29,7 +29,6 @@ from PIL import Image
 
 lreq.use_implicit_lreq.set(True)
 
-
 def place(canvas, image, x, y):
     im_size = image.shape[2]
     if len(image.shape) == 4:
@@ -55,6 +54,9 @@ def save_sample(model, sample, i):
 
 def sample(cfg, logger):
     torch.cuda.set_device(0)
+    # print("hi")
+    # cfg.OUTPUT_DIR = "mammogans_blur_result"
+    # print(cfg.OUTPUT_DIR)
     model = Model(
         startf=cfg.MODEL.START_CHANNEL_COUNT,
         layer_count=cfg.MODEL.LAYER_COUNT,
@@ -66,6 +68,7 @@ def sample(cfg, logger):
         channels=cfg.MODEL.CHANNELS,
         generator=cfg.MODEL.GENERATOR,
         encoder=cfg.MODEL.ENCODER)
+
     model.cuda(0)
     model.eval()
     model.requires_grad_(False)
@@ -103,14 +106,64 @@ def sample(cfg, logger):
 
     model.eval()
 
+    print("hi")
+
+    cfg.OUTPUT_DIR = "mammogans_blur_result"
+    model1 = Model(
+        startf=cfg.MODEL.START_CHANNEL_COUNT,
+        layer_count=cfg.MODEL.LAYER_COUNT,
+        maxf=cfg.MODEL.MAX_CHANNEL_COUNT,
+        latent_size=cfg.MODEL.LATENT_SPACE_SIZE,
+        truncation_psi=cfg.MODEL.TRUNCATIOM_PSI,
+        truncation_cutoff=cfg.MODEL.TRUNCATIOM_CUTOFF,
+        mapping_layers=cfg.MODEL.MAPPING_LAYERS,
+        channels=cfg.MODEL.CHANNELS,
+        generator=cfg.MODEL.GENERATOR,
+        encoder=cfg.MODEL.ENCODER)
+    
+    model1.cuda(0)
+    model1.eval()
+    model1.requires_grad_(False)
+
+    decoder1 = model1.decoder
+    encoder1 = model1.encoder
+    mapping_tl1 = model1.mapping_tl
+    mapping_fl1 = model1.mapping_fl
+    dlatent_avg1 = model1.dlatent_avg
+
+    logger.info("Trainable parameters generator:")
+    count_parameters(decoder1)
+
+    logger.info("Trainable parameters discriminator:")
+    count_parameters(encoder1)
+    
+    model_dict1 = {
+        'discriminator_s': encoder1,
+        'generator_s': decoder1,
+        'mapping_tl_s': mapping_tl1,
+        'mapping_fl_s': mapping_fl1,
+        'dlatent_avg': dlatent_avg1
+    }
+
+    cfg.OUTPUT_DIR = "mammogans_blur_result"
+    checkpointer1 = Checkpointer(cfg,
+                                model_dict1,
+                                {},
+                                logger=logger,
+                                save=False)
+
+    extra_checkpoint_data1 = checkpointer1.load()
+
+    model1.eval()
+
     layer_count = cfg.MODEL.LAYER_COUNT
 
-    def encode(x):
+    def encode(x,model):
         Z, _ = model.encode(x, layer_count - 1, 1)
         Z = Z.repeat(1, model.mapping_fl.num_layers, 1)
         return Z
 
-    def decode(x):
+    def decode(x,model):
         layer_idx = torch.arange(2 * cfg.MODEL.LAYER_COUNT)[np.newaxis, :, np.newaxis]
         ones = torch.ones(layer_idx.shape, dtype=torch.float32)
         coefs = torch.where(layer_idx < model.truncation_cutoff, ones, ones)
@@ -131,7 +184,15 @@ def sample(cfg, logger):
         with torch.no_grad():
             for filename in paths:
                 img = np.asarray(Image.open(path + '/' + filename))
-                img = np.array([img,img,img]).transpose((1,2,0))
+                if(img.shape==(28,28)):
+                    img = np.pad(img,(2,2))
+                    img = np.array([img,img,img]).transpose((1,2,0))
+                flag = False
+                if(img.shape==(512,512)):
+                    # if(img[:,:256].mean()<img[:,256:].mean()):
+                    #     flag = True
+                    #     img = img[:,::-1]
+                    img = np.array([img,img,img]).transpose((1,2,0))
                 if img.shape[2] == 4:
                     img = img[:, :, :3]
                 im = img.transpose((2, 0, 1))
@@ -142,9 +203,18 @@ def sample(cfg, logger):
                 if factor != 1:
                     x = torch.nn.functional.avg_pool2d(x[None, ...], factor, factor)[0]
                 assert x.shape[2] == im_size
-                latents = encode(x[None, ...].cuda())
-                f = decode(latents)
-                r = torch.cat([x[None, ...].detach().cpu(), f.detach().cpu()], dim=3)
+                latents = encode(x[None, ...].cuda(),model)
+                f = decode(latents,model)
+                latents1 = encode(x[None, ...].cuda(),model1)
+                f1 = decode(latents1,model1)
+
+                can_f = f.detach().cpu()
+                can_f1 = f1.detach().cpu()
+                can_x = x[None, ...].detach().cpu()
+                # if flag :
+                #     can_f = torch.flip(can_f,[3])
+                #     can_x = torch.flip(can_x,[3])
+                r = torch.cat([can_x, can_f, can_f1], dim=3)
                 canvas.append(r)
         return canvas
 
@@ -157,7 +227,7 @@ def sample(cfg, logger):
         canvas = make(chunk)
         canvas = torch.cat(canvas, dim=0)
 
-        save_path = 'make_figures/output/%s/reconstructions_%d.png' % (cfg.NAME, i)
+        save_path = 'make_figures/output/mammogans_compare/reconstructions_%d.png' % (i)
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         save_image(canvas * 0.5 + 0.5, save_path,
                    nrow=3,
@@ -166,5 +236,7 @@ def sample(cfg, logger):
 
 if __name__ == "__main__":
     gpu_count = 1
+    # cfg = get_cfg_defaults()
+    # print("hi")
     run(sample, get_cfg_defaults(), description='ALAE-figure-reconstructions-paged', default_config='configs/ffhq.yaml',
         world_size=gpu_count, write_log=False)

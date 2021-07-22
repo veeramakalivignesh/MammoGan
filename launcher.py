@@ -47,7 +47,7 @@ def _run(rank, world_size, fn, defaults, write_log, no_cuda, args):
         config_file = os.path.join('configs', config_file)
     cfg.merge_from_file(config_file)
     cfg.merge_from_list(args.opts)
-    cfg.freeze()
+    # cfg.freeze()
 
     logger = logging.getLogger("logger")
     logger.setLevel(logging.DEBUG)

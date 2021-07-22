@@ -34,7 +34,10 @@ def discriminator_logistic_simple_gp(d_result_fake, d_result_real, reals, r1_gam
 
     if r1_gamma != 0.0:
         real_loss = d_result_real.sum()
+        # real_loss.requires_grad = True
+        # print(real_loss.shape,reals.shape)
         real_grads = torch.autograd.grad(real_loss, reals, create_graph=True, retain_graph=True)[0]
+        # print(real_grads)
         r1_penalty = torch.sum(real_grads.pow(2.0), dim=[1, 2, 3])
         loss = loss + r1_penalty * (r1_gamma * 0.5)
     return loss.mean()

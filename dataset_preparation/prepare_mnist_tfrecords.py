@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-"""Create a tfrecords for MNIST. """
+# """Create a tfrecords for MNIST. """
 
 from defaults import get_cfg_defaults
 import sys

@@ -140,6 +140,14 @@ def sample(cfg, logger):
         src = []
         for filename in paths:
             img = np.asarray(Image.open(path + '/' + filename))
+            
+            if(img.shape==(28,28)):
+                img = np.pad(img,(2,2))
+                img = np.array([img,img,img]).transpose((1,2,0))
+            
+            if(img.shape==(512,512)):
+                img = np.array([img,img,img]).transpose((1,2,0))
+
             if img.shape[2] == 4:
                 img = img[:, :, :3]
             im = img.transpose((2, 0, 1))

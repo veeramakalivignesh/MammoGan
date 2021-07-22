@@ -92,7 +92,7 @@ def save_sample(lod2batch, tracker, sample, samplez, x, logger, model, cfg, enco
                                  lod2batch.current_epoch + 1,
                                  lod2batch.iteration // 1000)
                              )
-            print("Saved to %s" % f)
+            # print("Saved to %s" % f)
             save_image(result_sample, f, nrow=min(32, lod2batch.get_per_GPU_batch_size()))
 
         save_pic(resultsample)
@@ -154,7 +154,7 @@ def train(cfg, logger, local_rank, world_size, distributed):
         mapping_fl = model.mapping_fl
         dlatent_avg = model.dlatent_avg
 
-    count_param_override.print = lambda a: logger.info(a)
+    # count_param_override.print = lambda a: logger.info(a)
 
     logger.info("Trainable parameters generator:")
     count_parameters(decoder)
@@ -218,6 +218,7 @@ def train(cfg, logger, local_rank, world_size, distributed):
     layer_to_resolution = decoder.layer_to_resolution
 
     dataset = TFRecordsDataset(cfg, logger, rank=local_rank, world_size=world_size, buffer_size_mb=1024, channels=cfg.MODEL.CHANNELS)
+    # print(cfg)
 
     rnd = np.random.RandomState(3456)
     latents = rnd.randn(32, cfg.MODEL.LATENT_SPACE_SIZE)
@@ -231,6 +232,11 @@ def train(cfg, logger, local_rank, world_size, distributed):
         with torch.no_grad():
             for filename in list(os.listdir(path))[:32]:
                 img = np.asarray(Image.open(os.path.join(path, filename)))
+                if(img.shape==(512,512)):
+                    # if(img[:,:256].mean()<img[:,256:].mean()):
+                    #     flag = True
+                    #     img = img[:,::-1]
+                    img = np.array([img,img,img]).transpose((1,2,0))
                 if img.shape[2] == 4:
                     img = img[:, :, :3]
                 im = img.transpose((2, 0, 1))
@@ -260,6 +266,7 @@ def train(cfg, logger, local_rank, world_size, distributed):
                                                                 len(dataset) * world_size))
 
         dataset.reset(lod2batch.get_lod_power2(), lod2batch.get_per_GPU_batch_size())
+
         batches = make_dataloader(cfg, logger, dataset, lod2batch.get_per_GPU_batch_size(), local_rank)
 
         scheduler.set_batch_size(lod2batch.get_batch_size(), lod2batch.lod)
@@ -270,7 +277,10 @@ def train(cfg, logger, local_rank, world_size, distributed):
         epoch_start_time = time.time()
 
         i = 0
+        # print("yo")
+        # print(len(batches))
         for x_orig in tqdm(batches):
+            # print(x_orig.shape)
             i += 1
             with torch.no_grad():
                 if x_orig.shape[0] != lod2batch.get_per_GPU_batch_size():
@@ -293,7 +303,9 @@ def train(cfg, logger, local_rank, world_size, distributed):
             x.requires_grad = True
 
             encoder_optimizer.zero_grad()
-            loss_d = model(x, lod2batch.lod, blend_factor, d_train=True, ae=False)
+            loss_d = model(x, lod2batch.lod, blend_factor, d_train=True, ae=False) 
+            # print(x.shape, lod2batch.lod)
+            # print(loss_d)
             tracker.update(dict(loss_d=loss_d))
             loss_d.backward()
             encoder_optimizer.step()
@@ -327,7 +339,6 @@ def train(cfg, logger, local_rank, world_size, distributed):
                 if lod2batch.is_time_to_report():
                     save_sample(lod2batch, tracker, sample, samplez, x, logger, model_s, cfg, encoder_optimizer,
                                 decoder_optimizer)
-
         scheduler.step()
 
         if local_rank == 0:

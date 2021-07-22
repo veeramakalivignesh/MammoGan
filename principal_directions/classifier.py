@@ -24,7 +24,7 @@ def load_pkl(file_or_url):
     return pickle.load(file, encoding='latin1')
 
 
-classifier_urls = [
+classifier_urls = [ 
     'https://drive.google.com/uc?id=1Q5-AI6TwWhCVM7Muu4tBM7rp5nG_gmCX',  # celebahq-classifier-00-male.pkl
     'https://drive.google.com/uc?id=1Q5c6HE__ReW2W8qYAXpao68V1ryuisGo',  # celebahq-classifier-01-smiling.pkl
     'https://drive.google.com/uc?id=1Q7738mgWTljPOJQrZtSMLxzShEhrvVsU',  # celebahq-classifier-02-attractive.pkl
@@ -113,5 +113,6 @@ classifier_id_name = {
 
 def make_classifier(attrib_idx):
     classifier = load_pkl(classifier_urls[attrib_idx])
+    print(classifier_urls[attrib_idx])
     return classifier
 
