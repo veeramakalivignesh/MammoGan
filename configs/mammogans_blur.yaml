@@ -6,11 +6,11 @@ DATASET:
   PART_COUNT: 16
   SIZE: 16480
   SIZE_TEST: 16484 - 16480
-  PATH: /home/vikki/Desktop/BTP/ALAE/data/datasets/mammogans_blur/tfrecords/mammogans_blur-r%02d.tfrecords.%03d
-  PATH_TEST: /home/vikki/Desktop/BTP/ALAE/data/datasets/mammogans_blur-test/tfrecords/mammogans_blur-r%02d.tfrecords.%03d
+  PATH: /home/vikki/Desktop/BTP/MammoGan/data/datasets/mammogans_blur/tfrecords/mammogans_blur-r%02d.tfrecords.%03d
+  PATH_TEST: /home/vikki/Desktop/BTP/MammoGan/data/datasets/mammogans_blur-test/tfrecords/mammogans_blur-r%02d.tfrecords.%03d
   MAX_RESOLUTION_LEVEL: 7
 
-  SAMPLES_PATH: /home/vikki/Desktop/BTP/ALAE/dataset_samples/mammogans
+  SAMPLES_PATH: /home/vikki/Desktop/BTP/MammoGan/dataset_samples/mammogans
   STYLE_MIX_PATH: style_mixing/test_images/set_celeba
 MODEL:
   LATENT_SPACE_SIZE: 256

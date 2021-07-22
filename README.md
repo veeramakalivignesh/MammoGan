@@ -87,7 +87,7 @@ If you want to run from the command line, then you also need to set **PYTHONPATH
 
 For example, let's say we've cloned repository to *~/ALAE* directory, then do:
 
-    $ cd ~/ALAE
+    $ cd ~/MammoGan
     $ export PYTHONPATH=$PYTHONPATH:$(pwd)
 
 ![pythonpath](https://podgorskiy.com/static/pythonpath.svg)
@@ -101,7 +101,7 @@ Now you can run scripts as follows:
 
 | Path | Description
 | :--- | :----------
-| ALAE | Repository root folder
+| MammoGan | Repository root folder
 | &boxvr;&nbsp; configs | Folder with yaml config files.
 | &boxv;&nbsp; &boxvr;&nbsp; bedroom.yaml | Config file for LSUN bedroom dataset at 256x256 resolution.
 | &boxv;&nbsp; &boxvr;&nbsp; celeba.yaml | Config file for CelebA dataset at 128x128 resolution.

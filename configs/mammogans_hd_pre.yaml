@@ -8,7 +8,7 @@ DATASET:
   PATH: /home/cse/btech/cs1170335/Code/ALAE/ALAE/data/datasets/mammogans_hd_pre/tfrecords/mammogans_hd_pre-r%02d.tfrecords.%03d
   PATH_TEST: /home/cse/btech/cs1170335/Code/ALAE/ALAE/data/datasets/mammogans_hd_pre-test/tfrecords/mammogans_hd_pre-r%02d.tfrecords.%03d
   MAX_RESOLUTION_LEVEL: 8
-  SAMPLES_PATH: /home/vikki/Desktop/BTP/ALAE/dataset_samples/mammogans
+  SAMPLES_PATH: /home/vikki/Desktop/BTP/MammoGan/dataset_samples/mammogans
   STYLE_MIX_PATH: style_mixing/test_images/set_ffhq
 MODEL:
   LATENT_SPACE_SIZE: 512

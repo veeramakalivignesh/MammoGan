@@ -5,8 +5,8 @@ DATASET:
   PART_COUNT: 16
   SIZE: 16480
   SIZE_TEST: 16484 - 16480
-  PATH: /home/vikki/Desktop/BTP/ALAE/data/datasets/mammogans_512/tfrecords/mammogans_512-r%02d.tfrecords.%03d
-  PATH_TEST: /home/vikki/Desktop/BTP/ALAE/data/datasets/mammogans_512-test/tfrecords/mammogans_512-r%02d.tfrecords.%03d
+  PATH: /home/vikki/Desktop/BTP/MammoGan/data/datasets/mammogans_512/tfrecords/mammogans_512-r%02d.tfrecords.%03d
+  PATH_TEST: /home/vikki/Desktop/BTP/MammoGan/data/datasets/mammogans_512-test/tfrecords/mammogans_512-r%02d.tfrecords.%03d
   MAX_RESOLUTION_LEVEL: 9
   SAMPLES_PATH: /home/vikki/Desktop/BTP/Bi-Pro-GAN/aiims_cc_512
   STYLE_MIX_PATH: style_mixing/test_images/set_ffhq
