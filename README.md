@@ -87,7 +87,7 @@ If you want to run from the command line, then you also need to set **PYTHONPATH
 
 For example, let's say we've cloned repository to *~/ALAE* directory, then do:
 
-    $ cd ~/MammoGan
+    $ cd ~/ALAE
     $ export PYTHONPATH=$PYTHONPATH:$(pwd)
 
 ![pythonpath](https://podgorskiy.com/static/pythonpath.svg)
@@ -101,7 +101,7 @@ Now you can run scripts as follows:
 
 | Path | Description
 | :--- | :----------
-| MammoGan | Repository root folder
+| ALAE | Repository root folder
 | &boxvr;&nbsp; configs | Folder with yaml config files.
 | &boxv;&nbsp; &boxvr;&nbsp; bedroom.yaml | Config file for LSUN bedroom dataset at 256x256 resolution.
 | &boxv;&nbsp; &boxvr;&nbsp; celeba.yaml | Config file for CelebA dataset at 128x128 resolution.
@@ -298,3 +298,12 @@ Finally, to run metrics:
     python metrics/ppl.py -c <config>       # PPL score on generations
     python metrics/lpips.py -c <config>     # LPIPS score of reconstructions
  
+## MammoGan environment check
+
+To run the MammoGan demo, you will have to download and extract the "mammogans_hd_result" folder (trained weights) in the home directory and make respective path changes in the config file ("./configs/mammogans_hd.yaml"). Then run the following commands:
+
+    cd ~/MammoGan
+    export PYTHONPATH=$PYTHONPATH:$(pwd)
+    python make_figures/make_recon_figure_paged.py -c mammogans_hd
+
+If the output is generated in the "make_figures/" folder, BRAVO! 
