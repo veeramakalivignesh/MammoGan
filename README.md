@@ -297,10 +297,12 @@ Finally, to run metrics:
     python metrics/fid_rec.py -c <config>   # FID score on reconstructions
     python metrics/ppl.py -c <config>       # PPL score on generations
     python metrics/lpips.py -c <config>     # LPIPS score of reconstructions
- 
+
+# MammoGan
+
 ## MammoGan environment check
 
-To run the MammoGan demo, you will have to download and extract the "mammogans_hd_result" folder (trained weights) in the home directory and make respective path changes in the config file ("./configs/mammogans_hd.yaml"). Then run the following commands:
+To run the MammoGan demo, you will have to download and extract the "mammogans_hd_result" folder (trained weights) in the home directory and make respective path changes in the config file ("configs/mammogans_hd.yaml"). Then run the following commands:
 
     cd ~/MammoGan
     export PYTHONPATH=$PYTHONPATH:$(pwd)
